@@ -18,19 +18,18 @@
 import { useContentData } from "../stores/contentData";
 
 const route = useRoute();
-const { treeData, filesArray } = useContentData();
-const { data: content } = await useAsyncData('page-' + route.path, () => {
-  return queryCollection('content').path(route.path).first()
-})
-const  page  = content;
-
-const currentPath = route.path;
+const { treeData } = useContentData();
+const currentPath = route.path.replace(/\/+$/, '') || '/';
+const { data: page } = await useAsyncData('page-' + currentPath, () => {
+  return queryCollection('content').path(currentPath).first();
+});
 const isIndex = currentPath === "/";
-const isArticle = filesArray.includes(currentPath);
+const isArticle = Boolean(page.value);
 const articles = isArticle
   ? []
-  : (await useAsyncData(async () => await queryContent(currentPath).find()))?.data
-    ?.value ?? [];
+  : (await useAsyncData('category-' + currentPath, () =>
+      queryCollection('content').where('path', 'LIKE', `${currentPath}/%`).all()
+    )).data.value ?? [];
 
 const pageValue = page.value;
 const pageTitle = pageValue && pageValue.title ? pageValue.title : "";

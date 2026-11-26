@@ -1,3 +1,5 @@
+import { appendFile } from 'node:fs/promises';
+
 const GITHUB_API_URL = 'https://api.github.com';
 const REPO_OWNER = process.env.GITHUB_REPOSITORY.split('/')[0];
 const REPO_NAME = process.env.GITHUB_REPOSITORY.split('/')[1];
@@ -37,7 +39,15 @@ async function fetchFileContent(url) {
   return response.text();
 }
 
-async function postComment(body) {
+async function reportResult(body, isFork) {
+  if (isFork) {
+    console.log(body);
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      await appendFile(process.env.GITHUB_STEP_SUMMARY, `${body}\n`);
+    }
+    return;
+  }
+
   const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${PR_NUMBER}/comments`, {
     method: 'POST',
     headers: {
@@ -67,16 +77,16 @@ async function markAsReadyForMerge() {
 async function checkPR() {
   try {
     const pr = await fetchPR();
+    const isFork = pr.head.repo?.full_name !== pr.base.repo.full_name;
 
-    // Skip content checks and post a comment if the PR is created by a developer
+    // Skip content checks if the PR is created by a developer.
     if (DEVELOPER_USERNAMES.includes(pr.user.login)) {
-      console.log(`Developer PR detected from @${pr.user.login}. Posting comment and ensuring mergeability.`);
 
       const comment = `✅ This is a developer PR created by @${pr.user.login}. Content checks are skipped, and the PR is OK to merge.`;
-      await postComment(comment);
+      await reportResult(comment, isFork);
 
       // Ensure the PR can be merged
-      await markAsReadyForMerge();
+      if (!isFork) await markAsReadyForMerge();
 
       return;
     }
@@ -97,7 +107,7 @@ async function checkPR() {
         continue;
       }
 
-      if (filePath.endsWith('.md')) {
+      if (file.status !== 'removed' && filePath.endsWith('.md')) {
         const fileContent = await fetchFileContent(file.raw_url);
         const frontMatterMatch = fileContent.match(/^---\n([\s\S]*?)\n---/);
 
@@ -137,11 +147,10 @@ async function checkPR() {
     let comment = '📝 Content check completed.\n';
     if (violations.length > 0) {
       comment += '⚠️ Please fix the following violations:\n' + violations.join('\n');
-      await postComment(comment);
     } else {
       comment += '✅ Content looks good!';
-      await postComment(comment);
     }
+    await reportResult(comment, isFork);
   } catch (error) {
     console.error('Error checking PR:', error);
     process.exit(1);

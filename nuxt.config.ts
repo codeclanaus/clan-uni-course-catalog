@@ -8,6 +8,9 @@ export default defineNuxtConfig({
     name: 'CLAN UNI'
   },
   routeRules: {
+    '/software-engineering/methodologies': {
+      redirect: { to: '/software-engineering/ci-cd', statusCode: 301 },
+    },
     '/web-development/front-end/web-components/what-are-web-components': {
       redirect: {
         to: '/web-development/front-end/web-components',

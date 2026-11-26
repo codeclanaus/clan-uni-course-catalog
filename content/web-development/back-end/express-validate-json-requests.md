@@ -57,4 +57,4 @@ Add `GET /tickets/:id` and return 404 for an unknown ticket. Confirm that succes
 Original lesson text and examples. The following references informed this course.
 
 - Express contributors, [Routing guide](https://expressjs.com/en/guide/routing/) · [Express website license](https://github.com/expressjs/expressjs.com/blob/main/LICENSE.md).
-- Express contributors, [Express 5 API](https://expressjs.com/en/5x/api.html#express.json) · [Express website license](https://github.com/expressjs/expressjs.com/blob/main/LICENSE.md).
+- Express contributors, [Express 5 API](https://expressjs.com/en/5x/api/express/#expressjson) · [Express website license](https://github.com/expressjs/expressjs.com/blob/main/LICENSE.md).
